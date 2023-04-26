@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TimePicker
+        android:id="@+id/timePicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:timePickerMode="spinner"
+        android:layout_gravity="center_horizontal" />
+
+    <LinearLayout
+        android:id="@+id/weekdaysLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/mondayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="M" />
+
+        <Button
+            android:id="@+id/tuesdayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="T" />
+
+        <Button
+            android:id="@+id/wednesdayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="W" />
+
+        <Button
+            android:id="@+id/thursdayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="T" />
+
+        <Button
+            android:id="@+id/fridayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="F" />
+
+        <Button
+            android:id="@+id/saturdayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="S" />
+
+        <Button
+            android:id="@+id/sundayButton"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="S" />
+
+    </LinearLayout>
+
+
+    <Button
+        android:id="@+id/setAlarmButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Set Alarm"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp" />
+</LinearLayout>
