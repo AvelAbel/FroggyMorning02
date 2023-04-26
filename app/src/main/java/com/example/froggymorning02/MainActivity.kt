@@ -10,10 +10,10 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
+import android.widget.TextView
 import android.widget.TimePicker
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.example.froggymorning02.AlarmReceiver
 import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
         val timePicker = findViewById<TimePicker>(R.id.timePicker)
         timePicker.setIs24HourView(true)
         val setAlarmButton = findViewById<Button>(R.id.setAlarmButton)
+        val alarmInfoTextView = findViewById<TextView>(R.id.alarmInfoTextView)
 
         // Получение ссылок на кнопки дней недели
         dayButtons.apply {
@@ -51,6 +52,7 @@ class MainActivity : AppCompatActivity() {
             requestExactAlarmPermission()
         }
     }
+
     private val EXACT_ALARM_PERMISSION_REQUEST_CODE = 100
 
     private fun requestExactAlarmPermission() {
@@ -81,8 +83,58 @@ class MainActivity : AppCompatActivity() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val alarmIntent = Intent(this, AlarmReceiver::class.java)
 
-        // Остальной код для установки будильника
+        val timePicker = findViewById<TimePicker>(R.id.timePicker)
+        val alarmHour = timePicker.hour
+        val alarmMinute = timePicker.minute
+        val EA = 30
+        val n = 15
 
+        val firstAlertTime = alarmHour * 60 + alarmMinute - (EA / 60.0) / Math.pow(2.0, (n - 1).toDouble())
+        val selectedDayNames = mutableListOf<String>()
+
+        selectedDays.forEachIndexed { index, isSelected ->
+            if (isSelected) {
+                selectedDayNames.add(getDayName(index + 1))
+
+                for (i in 0 until n) {
+                    val earlyAlertTime = alarmHour * 60 + alarmMinute - (EA / 60.0) / Math.pow(2.0, i.toDouble())
+
+                    val calendar = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, alarmHour)
+                        set(Calendar.MINUTE, alarmMinute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                        timeInMillis = timeInMillis - earlyAlertTime.toInt() * 60 * 1000
+                        set(Calendar.DAY_OF_WEEK, index + 1)
+                        if (timeInMillis <= System.currentTimeMillis()) {
+                            add(Calendar.DAY_OF_YEAR, 7)
+                        }
+                    }
+
+                    // ... Создание и установка PendingIntent
+                }
+            }
+        }
+
+        val alarmInfo = "Будильник установлен на ${String.format("%02d:%02d", alarmHour, alarmMinute)} " +
+                "для дней: ${selectedDayNames.joinToString(", ")}\nПервое оповещение в ${String.format("%02d:%02d", (firstAlertTime / 60).toInt(), (firstAlertTime % 60).toInt())}"
+
+        findViewById<TextView>(R.id.alarmInfoTextView).text = alarmInfo
+    }
+
+
+
+    private fun getDayName(dayIndex: Int): String {
+        return when (dayIndex) {
+            Calendar.SUNDAY -> "Воскресенье"
+            Calendar.MONDAY -> "Понедельник"
+            Calendar.TUESDAY -> "Вторник"
+            Calendar.WEDNESDAY -> "Среда"
+            Calendar.THURSDAY -> "Четверг"
+            Calendar.FRIDAY -> "Пятница"
+            Calendar.SATURDAY -> "Суббота"
+            else -> ""
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -100,5 +152,3 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-
-
