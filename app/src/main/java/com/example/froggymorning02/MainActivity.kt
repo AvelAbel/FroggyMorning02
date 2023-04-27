@@ -16,6 +16,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import kotlin.math.pow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -97,15 +103,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun setAlarm() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val alarmIntent = Intent(this, AlarmReceiver::class.java).apply {
-            putExtra("ALARM_TYPE", "ALARM")
-        }
-        val firstAlertIntent = Intent(this, AlarmReceiver::class.java).apply {
-            putExtra("ALARM_TYPE", "FIRST_ALERT")
-        }
-
-        val alarmPendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val firstAlertPendingIntent = PendingIntent.getBroadcast(this, 1, firstAlertIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val alarmIntent = Intent(this, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val timePicker = findViewById<TimePicker>(R.id.timePicker)
         val alarmInfoTextView = findViewById<TextView>(R.id.alarmInfoTextView)
 
@@ -122,22 +121,22 @@ class MainActivity : AppCompatActivity() {
         val alarmTime = calendar.timeInMillis
         val triggerTime = if (alarmTime <= currentTime) alarmTime + TimeUnit.DAYS.toMillis(1) else alarmTime
 
-        val firstAlertTime = calendar.timeInMillis - TimeUnit.MINUTES.toMillis(30)
+        val numberOfAlerts = 15
+        val EA = 30 * 60 * 1000 // 30 минут в миллисекундах
+        val n = 15
+        val firstAlertTime = alarmTime - EA * (1 - 0.5.pow(numberOfAlerts - 1)) / (1 - 0.5) * (1 - 0.5)
 
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, alarmPendingIntent)
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, firstAlertTime, firstAlertPendingIntent)
 
-        val firstAlertCalendar = Calendar.getInstance().apply {
-            timeInMillis = firstAlertTime
-        }
-        val firstAlertTimeText = String.format("%02d:%02d", firstAlertCalendar.get(Calendar.HOUR_OF_DAY), firstAlertCalendar.get(Calendar.MINUTE))
 
-        val alarmTimeText = String.format("%02d:%02d", timePicker.hour, timePicker.minute)
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val firstAlertTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(firstAlertTime.toLong()))
+        val alarmTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(alarmTime.toLong()))
+
+
         alarmInfoTextView.text = "Будильник установлен на $alarmTimeText для дней: $selectedDaysText\nПервое оповещение в $firstAlertTimeText"
     }
-
-
-
 
 
 
