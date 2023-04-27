@@ -97,8 +97,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun setAlarm() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val alarmIntent = Intent(this, AlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val alarmIntent = Intent(this, AlarmReceiver::class.java).apply {
+            putExtra("ALARM_TYPE", "ALARM")
+        }
+        val firstAlertIntent = Intent(this, AlarmReceiver::class.java).apply {
+            putExtra("ALARM_TYPE", "FIRST_ALERT")
+        }
+
+        val alarmPendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val firstAlertPendingIntent = PendingIntent.getBroadcast(this, 1, firstAlertIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val timePicker = findViewById<TimePicker>(R.id.timePicker)
         val alarmInfoTextView = findViewById<TextView>(R.id.alarmInfoTextView)
 
@@ -117,7 +124,8 @@ class MainActivity : AppCompatActivity() {
 
         val firstAlertTime = calendar.timeInMillis - TimeUnit.MINUTES.toMillis(30)
 
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, alarmPendingIntent)
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, firstAlertTime, firstAlertPendingIntent)
 
         val firstAlertCalendar = Calendar.getInstance().apply {
             timeInMillis = firstAlertTime
@@ -127,6 +135,7 @@ class MainActivity : AppCompatActivity() {
         val alarmTimeText = String.format("%02d:%02d", timePicker.hour, timePicker.minute)
         alarmInfoTextView.text = "Будильник установлен на $alarmTimeText для дней: $selectedDaysText\nПервое оповещение в $firstAlertTimeText"
     }
+
 
 
 
