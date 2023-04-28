@@ -103,8 +103,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setAlarm() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val alarmIntent = Intent(this, AlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val timePicker = findViewById<TimePicker>(R.id.timePicker)
         val alarmInfoTextView = findViewById<TextView>(R.id.alarmInfoTextView)
 
@@ -123,22 +121,32 @@ class MainActivity : AppCompatActivity() {
 
         val numberOfAlerts = 15
         val EA = 30 * 60 * 1000 // 30 минут в миллисекундах
-        val n = 15
-        val firstAlertTime = alarmTime - EA * (1 - 0.5.pow(numberOfAlerts - 1)) / (1 - 0.5) * (1 - 0.5)
 
-
-
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+        // Создаем PendingIntent для каждого оповещения и основного будильника
+        for (i in 0 until numberOfAlerts) {
+            val alertTime = if (i == numberOfAlerts - 1) {
+                alarmTime
+            } else {
+                alarmTime - EA * (1 - 0.5.pow(numberOfAlerts - 1 - i)) / (1 - 0.5) * (1 - 0.5)
+            }
+            val pendingIntent = createAlarmPendingIntent(i)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alertTime.toLong(), pendingIntent)
+        }
 
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val firstAlertTime = alarmTime - EA * (1 - 0.5.pow(numberOfAlerts - 1)) / (1 - 0.5) * (1 - 0.5)
         val firstAlertTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(firstAlertTime.toLong()))
         val alarmTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(alarmTime.toLong()))
-
 
         alarmInfoTextView.text = "Будильник установлен на $alarmTimeText для дней: $selectedDaysText\nПервое оповещение в $firstAlertTimeText"
     }
 
-
+    private fun createAlarmPendingIntent(alarmIndex: Int): PendingIntent {
+        val alarmIntent = Intent(this, AlarmReceiver::class.java).apply {
+            putExtra("ALARM_INDEX", alarmIndex)
+        }
+        return PendingIntent.getBroadcast(this, alarmIndex, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
 
 
     private fun getDayName(dayIndex: Int): String {
