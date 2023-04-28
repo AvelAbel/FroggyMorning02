@@ -34,6 +34,12 @@ class MainActivity : AppCompatActivity() {
 
         val timePicker = findViewById<TimePicker>(R.id.timePicker)
         timePicker.setIs24HourView(true)
+
+        val currentTime = Calendar.getInstance()
+        currentTime.add(Calendar.MINUTE, 30)
+        timePicker.hour = currentTime.get(Calendar.HOUR_OF_DAY)
+        timePicker.minute = currentTime.get(Calendar.MINUTE)
+
         val setAlarmButton = findViewById<Button>(R.id.setAlarmButton)
         val alarmInfoTextView = findViewById<TextView>(R.id.alarmInfoTextView)
 
@@ -52,9 +58,10 @@ class MainActivity : AppCompatActivity() {
         dayButtons.forEachIndexed { index, button ->
             button.setOnClickListener {
                 selectedDays[index] = !selectedDays[index]
-                button.setBackgroundColor(if (selectedDays[index]) Color.GRAY else Color.TRANSPARENT)
+                button.setBackgroundColor(if (selectedDays[index]) Color.GRAY else Color.parseColor("#FFBB86FC"))
             }
         }
+
 
         setAlarmButton.setOnClickListener {
             requestExactAlarmPermission()
@@ -101,6 +108,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setAlert(alarmManager: AlarmManager, alertTime: Long, index: Int, isEarlyAlert: Boolean) {
+        if (alertTime > System.currentTimeMillis()) {
+            val pendingIntent = createAlarmPendingIntent(index, isEarlyAlert)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alertTime, pendingIntent)
+        }
+    }
+
+
     private fun setAlarm() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val timePicker = findViewById<TimePicker>(R.id.timePicker)
@@ -115,38 +130,56 @@ class MainActivity : AppCompatActivity() {
             set(Calendar.MILLISECOND, 0)
         }
 
-        val currentTime = System.currentTimeMillis()
-        val alarmTime = calendar.timeInMillis
-        val triggerTime = if (alarmTime <= currentTime) alarmTime + TimeUnit.DAYS.toMillis(1) else alarmTime
-
-        val numberOfAlerts = 15
+        val numberOfAlerts = 8
         val EA = 30 * 60 * 1000 // 30 минут в миллисекундах
 
-        // Создаем PendingIntent для каждого оповещения и основного будильника
-        for (i in 0 until numberOfAlerts) {
-            val alertTime = if (i == numberOfAlerts - 1) {
-                alarmTime
-            } else {
-                alarmTime - EA * (1 - 0.5.pow(numberOfAlerts - 1 - i)) / (1 - 0.5) * (1 - 0.5)
+        for (j in 0 until 7) {
+            if (selectedDays[j]) {
+                val dayOfWeek = (j + 1) % 7
+                calendar.set(Calendar.DAY_OF_WEEK, dayOfWeek)
+
+                for (i in 0 until numberOfAlerts) {
+                    val timeToSubtract = EA * (1 - 0.5.pow(i)).toLong()
+                    val alertTime = calendar.timeInMillis - timeToSubtract
+
+                    setAlert(alarmManager, alertTime, i * numberOfAlerts + j, true) // Устанавливаем ранние оповещения
+                }
+
+                setAlert(alarmManager, calendar.timeInMillis, numberOfAlerts * 7 + j, false) // Устанавливаем основной будильник
             }
-            val pendingIntent = createAlarmPendingIntent(i)
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alertTime.toLong(), pendingIntent)
         }
 
+
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val firstAlertTime = alarmTime - EA * (1 - 0.5.pow(numberOfAlerts - 1)) / (1 - 0.5) * (1 - 0.5)
+        val firstAlertTime = calendar.timeInMillis - EA
         val firstAlertTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(firstAlertTime.toLong()))
-        val alarmTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(alarmTime.toLong()))
+        val alarmTimeText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(calendar.timeInMillis))
+
+        // Сбрасываем выбор дней недели и цвет кнопок
+        for (i in selectedDays.indices) {
+            selectedDays[i] = false
+            dayButtons[i].setBackgroundColor(Color.parseColor("#FFBB86FC"))
+        }
+
 
         alarmInfoTextView.text = "Будильник установлен на $alarmTimeText для дней: $selectedDaysText\nПервое оповещение в $firstAlertTimeText"
     }
 
-    private fun createAlarmPendingIntent(alarmIndex: Int): PendingIntent {
-        val alarmIntent = Intent(this, AlarmReceiver::class.java).apply {
-            putExtra("ALARM_INDEX", alarmIndex)
+
+
+    private fun createAlarmPendingIntent(index: Int, isEarlyAlert: Boolean): PendingIntent {
+        val intent = Intent(this, AlarmReceiver::class.java)
+        intent.putExtra("ALARM_INDEX", index)
+        intent.putExtra("IS_EARLY_ALERT", isEarlyAlert)
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
         }
-        return PendingIntent.getBroadcast(this, alarmIndex, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val uniqueRequestCode = (if (isEarlyAlert) 0 else 1) * 1000 + index
+        return PendingIntent.getBroadcast(this, uniqueRequestCode, intent, flags)
     }
+
 
 
     private fun getDayName(dayIndex: Int): String {
